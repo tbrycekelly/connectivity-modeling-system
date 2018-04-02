@@ -1,7 +1,7 @@
 # connectivity-modeling-system (CMS), for more information please read and cite Paris et al. 2013EMS
 
 
-Note:_ This is a forked version of CMS for my (TBK) own personal use. The source has been altered for compilation and optimization on COAPS servers and my use cases. Use as your own risk, the software is AS-IS.
+_Note:_ This is a forked version of CMS for my (TBK) own personal use. The source has been altered for compilation and optimization on COAPS servers and my use cases. Use as your own risk, the software is AS-IS.
 
   The CMS is a multiscale stochastic Lagrangian framework developed by Paris' Lab at the Rosenstiel School of Marine &amp; Atmospheric Science to study complex migrations and give probability estimates of dispersion, connectivity, fate of pollutants, and other Lagrangian phenomena. This repository facilitates and encourages COMMUNITY CONTRIBUTIONS TO CMS MODULES.
 
