@@ -2,7 +2,7 @@
 !* System: Connectivity Modeling System (CMS)                               *
 !* File : mod_getdata.f90                                                   *
 !* Last Modified: 2016-11-18                                                *
-!* Code contributors: Ana Carolina Vaz, Judith Helgers, Claire B. Paris     * 
+!* Code contributors: Ana Carolina Vaz, Judith Helgers, Claire B. Paris     *
 !*                                                                          *
 !* Copyright (C) 2011, University of Miami                                  *
 !*                                                                          *
@@ -71,10 +71,10 @@ MODULE mod_getdata
     tmpDoubleTime(:)
  character(char_len), allocatable :: &
     downl_nest(:)
-   
+
 !dataset namelists
  namelist /nest_input/filename, &
-   xaxis,yaxis,zaxis,taxis,xstart, & 
+   xaxis,yaxis,zaxis,taxis,xstart, &
    xend,ystart,yend,zstart,zend, zaxis_positive_direction, &
    tstart_yy,tstart_mm,tstart_dd,tend_yy,tend_mm,tend_dd, &
    time_step,time_units,jdate_yy,jdate_mm,jdate_dd, &
@@ -91,24 +91,26 @@ CONTAINS
 !**************************************************************
 !create directories
 SUBROUTINE create_directories(filenumber)
- character(char_len), intent(in)  :: filenumber    
- character(char_len)              :: filedir, fileoutput, filescratch 
- 
+ character(char_len), intent(in)  :: filenumber
+ character(char_len)              :: filedir, fileoutput, filescratch
+
  !make /expt_
  write(filedir,'(A,A)') 'expt_',trim(filenumber)
- CALL make_dir (adjustl(trim(filedir)),Len(adjustl(trim(filedir))))
+ CALL make_dir(adjustl(trim(filedir)),Len(adjustl(trim(filedir))))
  !make /expt_/nests
  write(filenest,'(A,A,A)') 'expt_',trim(filenumber),'/nests/'
  CALL make_dir(adjustl(trim(filenest)),Len(adjustl(trim(filenest))))
- 
+
  !add path to /input_/
- write(fileinput,'(A,A,A)') 'input_',trim(filenumber), '/'
+ write(filedir,'(A,A)') 'input_',trim(filenumber) ! Copied from the 'expt_' line above - TBK
+ write(fileinput,'(A,A,A)') 'input_',trim(filenumber), '/'  ! Original line, not sure what it does.
+ CALL make_dir(adjustl(trim(filedir)),Len(adjustl(trim(filedir)))) ! Copied from above - TBK
 
 END SUBROUTINE create_directories
 
 !**************************************************************
 !read the file nest.nml
-SUBROUTINE read_nest_file 
+SUBROUTINE read_nest_file
 
  integer (kind=int_kind) :: iunit
  character(char_len)     :: nlname
@@ -135,19 +137,19 @@ SUBROUTINE read_nest_file
  zend = 0
  velocity_conversion_factor =1
  depth_conversion_factor = 1
- wvel_positive_direction = 'unknown' 
+ wvel_positive_direction = 'unknown'
  angle_file='unknown'
  time_units='unknown'
  fill_value = 0
  was2d = .false.
 
- write(nlname,'(A,I0,A)') 'nest_', nest_n, '.nml' 
+ write(nlname,'(A,I0,A)') 'nest_', nest_n, '.nml'
 
 !open file
  CALL get_unit(iunit)
- INQUIRE(FILE=trim(fileinput)//nlname, EXIST=file_exists)
+ INQUIRE(FILE=trim(fileinput)//trim(nlname), EXIST=file_exists)
  IF (file_exists) THEN
-   open(iunit, file=trim(fileinput)//nlname, status='old',form='formatted')
+   open(iunit, file=trim(fileinput)//trim(nlname), status='old',form='formatted')
  ELSE
    print *, "Error: File ", trim(fileinput)//trim(nlname)," does not exist"
    stop
@@ -164,7 +166,7 @@ SUBROUTINE read_nest_file
  ENDIF
  IF (wvel_name .eq. '') THEN
    wvel_name = 'unknown'
-   wvel_positive_direction = 'unknown'   
+   wvel_positive_direction = 'unknown'
  ENDIF
  IF (dens_name .eq. '') THEN
    dens_name = 'unknown'
@@ -185,7 +187,7 @@ SUBROUTINE read_nest_file
     stop
   ENDIF
  ENDIF
- 
+
  IF (xaxis .eq. 'unknown' .or. xaxis .eq. '') THEN
   print *, 'xaxis in the nestfile has to have a value'
   stop
@@ -218,18 +220,18 @@ SUBROUTINE read_nest_file
   print *, 'fill_value in the nestfile has to have a value'
   stop
  ENDIF
- 
+
  print *, 'fill_value and velocity_conversion_factor on read', fill_value, velocity_conversion_factor
 END SUBROUTINE read_nest_file
 
 !**************************************************************
 !read longitude, latitude, depth and time data from url or local files
-SUBROUTINE read_data 
+SUBROUTINE read_data
 
  integer  (kind=int_kind) :: ncId, ncIdW
  character (char_len)     :: datafile, datafileW
 
-!if method = opendap then read from url 
+!if method = opendap then read from url
 !if method = localfile then read from first nestfile in raw directory
  IF (filename .eq. 'unknown') THEN
   write(datafile,'(A,I0,A,I4.4,I2.2,I2.2,A)') &
@@ -237,14 +239,14 @@ SUBROUTINE read_data
   IF (nc_file_exists(datafile) .eqv. .false.) THEN
     write(datafile,'(A,I0,A,I4.4,I2.2,I2.2,A)') &
     trim(filenest)//'raw/nest_',nest_n,'_',tstart_yy,tstart_mm,tstart_dd,'000000.nc'
-  ENDIF 
+  ENDIF
  ELSE
     datafile = filename
  ENDIF
 
 !Open file for read access
- print *, 'Opening file for reading: ', trim(datafile) 
- CALL nc_open(datafile,ncId) 
+ print *, 'Opening file for reading: ', trim(datafile)
+ CALL nc_open(datafile,ncId)
 
 !Get coordinate dimensions
 !xaxis ..
@@ -252,7 +254,7 @@ SUBROUTINE read_data
 !yaxis ..
  CALL nc_info_dim(datafile, ncId, yaxis, gjdm)
 !zaxis ..
- IF (zaxis .ne. 'unknown') THEN 
+ IF (zaxis .ne. 'unknown') THEN
   CALL nc_info_dim(datafile, ncId, zaxis, gkdm)
   hasDepth = .true.
  ELSE
@@ -260,7 +262,7 @@ SUBROUTINE read_data
   hasDepth = .false.
  ENDIF
 !taxis ..
- IF (taxis .ne. 'unknown') THEN 
+ IF (taxis .ne. 'unknown') THEN
   CALL nc_info_dim(datafile, ncId, taxis, gtdm)
   hasTime = .true.
   !here checks what is the gtdm
@@ -279,19 +281,19 @@ SUBROUTINE read_data
   IF (ndimsLon .eq. 2 .and. ndimsLat .eq. 2) THEN
    grid2d = .true.
   ELSE
-   print *, 'Longitude and Latitude have a dimension that is not supported' 
+   print *, 'Longitude and Latitude have a dimension that is not supported'
    stop
   ENDIF
  ENDIF
 
-!allocate temporary coordinate arrays  
+!allocate temporary coordinate arrays
  IF(grid2d) THEN
    allocate (tmpLon2d(gidm,gjdm))
    allocate (tmpLat2d(gidm,gjdm))
  ELSE
    allocate (tmpLon1d(gidm))
    allocate (tmpLat1d(gjdm))
- ENDIF 
+ ENDIF
  allocate (tmpDepth(gkdm))
  allocate (tmpDepthW(gkdm))
  allocate (tmpTime(gtdm))
@@ -324,7 +326,7 @@ SUBROUTINE read_data
  IF (hasDepth) THEN
   CALL nc_read1d(datafile, ncId, depth_name, tmpDepth, gkdm)
 ! handle inverted z axis conventions
-  IF (zaxis_positive_direction .eq. 'up') THEN 
+  IF (zaxis_positive_direction .eq. 'up') THEN
    tmpDepth=-1.*tmpDepth
   ELSE IF (zaxis_positive_direction .ne. 'down') THEN
    print *, 'zaxis_positive_direction in the nestfile has to have the value up or down'
@@ -350,11 +352,11 @@ SUBROUTINE read_data
  IF (filename .eq. 'unknown' .and. wvel_name .ne. 'unknown' ) THEN
   write(datafileW,'(A,I0,A,I4.4,I2.2,I2.2,A)') &
        trim(filenest)//'raw/nest_',nest_n,'_',tstart_yy,tstart_mm,tstart_dd,'000000w.nc'
-  CALL nc_open(datafileW,ncIdW) 
+  CALL nc_open(datafileW,ncIdW)
 ! get depthdata from Wfile
   CALL nc_read1d(datafileW, ncIdW, depth_name, tmpDepthW, gkdm)
 ! handle inverted z axis conventions
-  IF (zaxis_positive_direction .eq. 'up') THEN 
+  IF (zaxis_positive_direction .eq. 'up') THEN
    tmpDepthW=-1.*tmpDepthW
   ENDIF
   tmpDepthW = tmpDepthW * depth_conversion_factor
@@ -369,9 +371,9 @@ SUBROUTINE read_data
   ENDIF
  ENDIF
 
-!Close file after data read 
+!Close file after data read
  CALL nc_close(datafile,ncId)
- 
+
 END SUBROUTINE read_data
 
 !**************************************************************
@@ -382,7 +384,7 @@ SUBROUTINE create_filedownload(nestname)
  integer (kind=int_kind) :: iunit
  character(char_len)     :: downlname
 
- write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt' 
+ write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt'
  CALL get_unit(iunit)
 
  IF ((first_time_downl) .and. (numFiles .le. 0)) THEN
@@ -434,20 +436,20 @@ END SUBROUTINE create_filedownload
 !if the nestfile is the same then these datafiles do not have to be downloaded again
 !if the nestfile is different then all datafiles have to be downloaded again
 SUBROUTINE read_filedownload
-  
+
  integer (kind=int_kind) :: iunit, numLines, i,downl_timeStep
  real (kind = real_kind) :: downl_xstart, downl_xend,downl_ystart, downl_yend,downl_zstart, downl_zend,&
                             downl_velFactor,downl_depthFactor,downl_fillvalue
  logical (kind=log_kind) :: file_exists
- character(char_len)     :: downlname,downl_filename, downl_timeUnits,downl_zDirection,downl_lon,downl_lat, & 
-                            downl_depth,downl_time,downl_uvel, downl_vvel, downl_wvel,downl_wDirection, &  
+ character(char_len)     :: downlname,downl_filename, downl_timeUnits,downl_zDirection,downl_lon,downl_lat, &
+                            downl_depth,downl_time,downl_uvel, downl_vvel, downl_wvel,downl_wDirection, &
                             downl_dens, downl_temp,downl_saln, downl_ssh
 
  first_time_downl = .true.
 
- write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt' 
+ write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt'
  INQUIRE(FILE=trim(filenest)//downlname, EXIST=file_exists)
- IF (file_exists) THEN     
+ IF (file_exists) THEN
 ! get number of lines in file
   CALL getsize(trim(filenest)//downlname,numLines)
 ! get number of downloaded files
@@ -467,7 +469,7 @@ SUBROUTINE read_filedownload
    read(iunit,*) downl_yend
    read(iunit,*) downl_zstart
    read(iunit,*) downl_zend
-   read(iunit,'(A)') downl_zDirection   
+   read(iunit,'(A)') downl_zDirection
    read(iunit,*) downl_timeStep
    read(iunit,'(A)') downl_timeUnits
    read(iunit,'(A)') downl_lon
@@ -483,7 +485,7 @@ SUBROUTINE read_filedownload
    read(iunit,'(A)') downl_dens
    read(iunit,'(A)') downl_temp
    read(iunit,'(A)') downl_saln
-   read(iunit,'(A)') downl_ssh   
+   read(iunit,'(A)') downl_ssh
    read(iunit,*) downl_fillvalue
 
 !  check if nestfile did not change
@@ -493,7 +495,7 @@ SUBROUTINE read_filedownload
      (abs(downl_ystart - ystart).lt. 0.01).and. &
      (abs(downl_yend - yend).lt. 0.01).and.&
      (abs(downl_zstart - zstart).lt. 0.01).and.&
-     (abs(downl_zend - zend).lt. 0.01) .and.  &  
+     (abs(downl_zend - zend).lt. 0.01) .and.  &
      (downl_zDirection .eq. zaxis_positive_direction) .and.&
      (downl_timeStep .eq. time_step) .and.&
      (downl_timeUnits .eq. time_units) .and.&
@@ -533,15 +535,15 @@ END SUBROUTINE read_filedownload
 !handle longitude values to 0<x<360
 SUBROUTINE change_longitudes
 
- integer (kind=int_kind)  :: i,j  
+ integer (kind=int_kind)  :: i,j
 
- DO WHILE (xstart .lt. 0) 
+ DO WHILE (xstart .lt. 0)
    xstart = xstart + 360
  ENDDO
  DO WHILE (xstart .ge. 360)
    xstart = xstart - 360
  ENDDO
- DO WHILE (xend .lt. 0) 
+ DO WHILE (xend .lt. 0)
    xend = xend + 360
  ENDDO
  DO WHILE (xend .ge. 360)
@@ -577,7 +579,7 @@ END SUBROUTINE change_longitudes
 SUBROUTINE define_new_grid
 
  logical (kind=log_kind) :: possible1d
- integer (kind=int_kind) :: i,j , ii, jj,small_i, small_j 
+ integer (kind=int_kind) :: i,j , ii, jj,small_i, small_j
  real (kind=real_kind)   :: small_surface=bignum,minLat, minLon, maxLat, maxLon,surface
 
 !check if 2D lon and lat can be changed to 1D lon and lat
@@ -596,7 +598,7 @@ SUBROUTINE define_new_grid
   ENDDO
  ENDDO
 !if 2D lon and lat can be changed to 1D lon and lat then do it
- IF (possible1d) THEN   
+ IF (possible1d) THEN
   print *, "transform longitude and latitude from 2d -> 1d"
   was2d = .true.
   allocate (tmpLon1d(gidm))
@@ -617,7 +619,7 @@ SUBROUTINE define_new_grid
   allocate (src_bbox_lon(gidm-1,gjdm-1,4))
   allocate (src_bbox_lat(gidm-1,gjdm-1,4))
   allocate (angle(gidm,gjdm))
-  DO j=1,gjdm-1 
+  DO j=1,gjdm-1
    DO i=1,gidm-1
      src_bbox_lon(i,j,1)=  tmpLon2d(i,j)
      src_bbox_lat(i,j,1)=  tmpLat2d(i,j)
@@ -629,18 +631,18 @@ SUBROUTINE define_new_grid
      src_bbox_lat(i,j,4)=  tmpLat2d(i,j+1)
    ENDDO
   ENDDO
-     
+
 ! find the biggest bounding box around all gridcells in the original grid
   minLat = minval(tmpLat2d)
   maxLat = maxval(tmpLat2d)
   minLon = minval(tmpLon2d)
   maxLon = maxval(tmpLon2d)
 
-! find the smallest grid cell in the original grid 
-  DO j=1,gjdm-1  
+! find the smallest grid cell in the original grid
+  DO j=1,gjdm-1
    DO i=1,gidm-1
     surface = abs(minval(src_bbox_lon(i,j,:)) - maxval(src_bbox_lon(i,j,:))) &
-           *  abs(minval(src_bbox_lat(i,j,:)) - maxval(src_bbox_lat(i,j,:)))   
+           *  abs(minval(src_bbox_lat(i,j,:)) - maxval(src_bbox_lat(i,j,:)))
     IF (surface .lt. small_surface) THEN
      small_i = i
      small_j = j
@@ -659,12 +661,12 @@ SUBROUTINE define_new_grid
 
 ! fill the longitude and latitude arrays with the values of the new grid
   DO ii=1,gidm_new
-   tmpLon_new(ii)=minLon+ii*abs(minval(src_bbox_lon(small_i,small_j,:)) - maxval(src_bbox_lon(small_i,small_j,:)))    
+   tmpLon_new(ii)=minLon+ii*abs(minval(src_bbox_lon(small_i,small_j,:)) - maxval(src_bbox_lon(small_i,small_j,:)))
   ENDDO
   DO jj=1,gjdm_new
    tmpLat_new(jj)=minLat+jj*abs(minval(src_bbox_lat(small_i,small_j,:)) - maxval(src_bbox_lat(small_i,small_j,:)))
   ENDDO
-  print *, "Data needs to be regridded" 
+  print *, "Data needs to be regridded"
   print *, "Size old grid: ", gidm, " by ", gjdm
   print *, "Size new grid: ", gidm_new, " by ", gjdm_new
  ENDIF
@@ -769,7 +771,7 @@ END SUBROUTINE regridW
 SUBROUTINE calculate_weights
 
  integer (kind=int_kind)  :: &
-     i,j ,ii,jj,k,l,polySides, crossedLines,iter 
+     i,j ,ii,jj,k,l,polySides, crossedLines,iter
  real (kind=real_kind)    :: &
      plat, plon, &! lat/lon coords of destination point
      iguess, jguess, &  ! current guess for bilinear coordinate
@@ -778,9 +780,9 @@ SUBROUTINE calculate_weights
      dph1, dph2, dph3,& ! some longitude differences
      dthp, dphp,& ! difference between point and sw corner
      mat1, mat2, mat3, mat4,& ! matrix elements
-     determinant! matrix determinant  
+     determinant! matrix determinant
  real (kind=real_kind) , dimension(4) :: &
-     src_lats,src_lons 
+     src_lats,src_lons
 
 
  allocate (w(idm_out_new,jdm_out_new,4))
@@ -812,7 +814,7 @@ SUBROUTINE calculate_weights
      ENDDO !end loop: k=1, polySides
 
 !    if plon and plat are in gridcell, calculate the 4 weights
-     IF (mod(crossedLines,2) .eq. 1) THEN 
+     IF (mod(crossedLines,2) .eq. 1) THEN
       src_lats(1)=src_bbox_lat(i,j,1)
       src_lats(2)=src_bbox_lat(i,j,2)
       src_lats(3)=src_bbox_lat(i,j,3)
@@ -851,7 +853,7 @@ SUBROUTINE calculate_weights
 
       iguess = 0.5
       jguess = 0.5
- 
+
       DO iter=1,max_iter
        dthp = plat - src_lats(1) - dth1*iguess - dth2*jguess - dth3*iguess*jguess
        dphp = plon - src_lons(1)
@@ -868,7 +870,7 @@ SUBROUTINE calculate_weights
        delj = (mat1*dphp - dthp*mat3)/determinant
        deli = (dthp*mat4 - mat2*dphp)/determinant
 
-       IF (abs(deli) < converge .and. abs(delj) < converge) exit 
+       IF (abs(deli) < converge .and. abs(delj) < converge) exit
 
        iguess = iguess + deli
        jguess = jguess + delj
@@ -900,11 +902,11 @@ SUBROUTINE regrid
  character (char_len)     :: anglefile
 
 !angles of original grid. The velocities have to be recalculated with help of the angles.
- angle=0  
+ angle=0
  IF (angle_file .ne. 'unknown') THEN
 ! open file with angles
   anglefile = trim(fileinput)//trim(angle_file)//".nc"
-  CALL nc_open(anglefile,ncId) 
+  CALL nc_open(anglefile,ncId)
 ! get angles
   CALL nc_read2d(anglefile,ncId,"angle",angle,gidm,gjdm)
 ! close file with angles
@@ -916,11 +918,11 @@ SUBROUTINE regrid
    DO kk = 1, kdm_out
     fillval_bool = 0
     outside_bool = 0
-    uvel_temp = 0 
+    uvel_temp = 0
     vvel_temp = 0
     wvel_temp = 0
     dens_temp = 0
-    temp_temp = 0 
+    temp_temp = 0
     saln_temp = 0
     ssh_temp = 0
 
@@ -996,7 +998,7 @@ SUBROUTINE regrid
        saln_new(ii,jj,kk,1) = fill_valueNew
       ENDIF
       IF (ssh_name .ne. 'unknown' ) THEN
-       IF (kk .eq. 1) THEN  
+       IF (kk .eq. 1) THEN
         ssh_new(ii,jj,1) = fill_valueNew
        ENDIF
       ENDIF
@@ -1015,7 +1017,7 @@ SUBROUTINE regrid
        saln_new(ii,jj,kk,1) = saln_temp
       ENDIF
       IF (ssh_name .ne. 'unknown' ) THEN
-       IF (kk .eq. 1) THEN 
+       IF (kk .eq. 1) THEN
         ssh_new(ii,jj,1) = ssh_temp
        ENDIF
       ENDIF
@@ -1032,38 +1034,38 @@ END SUBROUTINE regrid
 !**************************************************************
 !find indices for Depth or Time or 1D lon and 1D lat
 SUBROUTINE locateIndex(array, num, point,pointName, pointIndex)
- 
+
  integer (kind=int_kind), intent(in) :: num
  real (kind = real_kind), intent(in)  :: array(num)
- real (kind = real_kind), intent(in) :: point 
+ real (kind = real_kind), intent(in) :: point
  character(len=*), intent(in)  :: pointName
- integer (kind=int_kind), intent(out):: pointIndex    
+ integer (kind=int_kind), intent(out):: pointIndex
  integer (kind=int_kind) :: k
- logical (kind=log_kind) :: foundIndex    
+ logical (kind=log_kind) :: foundIndex
 
 
 !find index
  foundIndex = .false.
  IF ((pointName .eq. 'Lat') .and. (LatDec)) THEN
-  DO k=2,num 
+  DO k=2,num
    IF (foundIndex .eqv. .false.) THEN
     IF ((point .gt. array(k)) .and. (point .le. array(k-1))) THEN
      foundIndex = .true.
      pointIndex = k-1
     ENDIF
    ENDIF
-  ENDDO 
+  ENDDO
  ELSE
-  DO k=2,num 
+  DO k=2,num
    IF (foundIndex .eqv. .false.) THEN
     !  print *,"point ",point,"array k", array(k), "array K-1 ", array(k-1)
       IF ((point .lt. array(k)) .and. (point .ge. array(k-1))) THEN
        foundIndex = .true.
        pointIndex = k-1
-      ENDIF  
+      ENDIF
    ENDIF
   ENDDO
- ENDIF 
+ ENDIF
 
  IF (foundIndex .eqv. .false.) THEN
   IF (abs(point-array(num)) .lt. 0.01) THEN
@@ -1074,25 +1076,25 @@ SUBROUTINE locateIndex(array, num, point,pointName, pointIndex)
 
  IF (foundIndex .eqv. .false.) THEN
   IF (pointName .eq. 'Lon') THEN
-   print *,  'The data for longitude is not available.' 
+   print *,  'The data for longitude is not available.'
    print *,  'Choose a different value in the nest file.'
    print *,  'Available: ', array(1),' to ', array(num)
    print *,  'Your request: ', point
   ENDIF
   IF (pointName .eq. 'Lat') THEN
-   print *,  'The data for latitude is not available.' 
+   print *,  'The data for latitude is not available.'
    print *,  'Choose a different value in the nest file.'
    print *,  'Available: ', array(1),' to ', array(num)
    print *,  'Your request: ', point
   ENDIF
   IF (pointName .eq. 'Time') THEN
-   print *,  'The data for time is not available.' 
+   print *,  'The data for time is not available.'
    print *,  'Choose a different value in the nest file'
    print *,  'Available: ', array(1),' to ', array(num)
    print *,  'Your request: ', point
   ENDIF
   IF (pointName .eq. 'Depth') THEN
-   print *,  'The data for depth is not available.' 
+   print *,  'The data for depth is not available.'
    print *,  'Choose a different value in the nest file'
    print *,  'Available: ', array(1),' to ', array(num)
    print *,  'Your request: ', point
@@ -1103,10 +1105,10 @@ END SUBROUTINE locateIndex
 
 !**************************************************************
 !subset the needed domain from the available datasets
-SUBROUTINE subset_domain 
+SUBROUTINE subset_domain
 
  real (kind = real_kind) :: stime, etime, difftime
- integer (kind=int_kind) :: timeloop,stime_int, etime_int  
+ integer (kind=int_kind) :: timeloop,stime_int, etime_int
 
 !find indices for lat en lon
  IF (grid2d) THEN
@@ -1118,25 +1120,25 @@ SUBROUTINE subset_domain
   jend = gjdm
   CALL locateIndex(tmpLon_new,gidm_new,xstart,'Lon', istart_new)
   CALL locateIndex(tmpLon_new,gidm_new,xend,'Lon', iend_new)
-  CALL locateIndex(tmpLat_new,gjdm_new,ystart,'Lat',jstart_new)  
+  CALL locateIndex(tmpLat_new,gjdm_new,ystart,'Lat',jstart_new)
   CALL locateIndex(tmpLat_new,gjdm_new,yend,'Lat', jend_new)
  ELSE
-  CALL locateIndex(tmpLon1d,gidm,xstart,'Lon', istart)  
+  CALL locateIndex(tmpLon1d,gidm,xstart,'Lon', istart)
   CALL locateIndex(tmpLon1d,gidm,xend,'Lon', iend)
-  CALL locateIndex(tmpLat1d,gjdm,ystart,'Lat', jstart)  
+  CALL locateIndex(tmpLat1d,gjdm,ystart,'Lat', jstart)
   CALL locateIndex(tmpLat1d,gjdm,yend,'Lat', jend)
  ENDIF
 
 !find indices for depth
- CALL locateIndex(tmpDepth,gkdm,zstart,'Depth',kstart) 
- CALL locateIndex(tmpDepth,gkdm,zend,'Depth',kend) 
+ CALL locateIndex(tmpDepth,gkdm,zstart,'Depth',kstart)
+ CALL locateIndex(tmpDepth,gkdm,zend,'Depth',kend)
 
 !find indices for time
  IF (filename .ne. 'unknown') THEN
    IF (time_units .eq. 'months') THEN
      CALL nmonths(tstart_mm,tstart_yy,jdate_mm,jdate_yy, stime_int)
      CALL nmonths(tend_mm,tend_yy,jdate_mm,jdate_yy, etime_int)
-   ELSE 
+   ELSE
      CALL ndays(tstart_mm,tstart_dd,tstart_yy,jdate_mm,jdate_dd,jdate_yy,stime_int)
      CALL ndays(tend_mm,tend_dd,tend_yy,jdate_mm,jdate_dd,jdate_yy,etime_int)
    ENDIF
@@ -1155,7 +1157,7 @@ SUBROUTINE subset_domain
      etime=etime*real(24)
      !print *, "stime: ", stime," etime: ",etime
    ENDIF
-  
+
    CALL locateIndex(tmpTime,gtdm,stime,'Time',lstart)
    CALL locateIndex(tmpTime,gtdm,etime,'Time',lend)
  ENDIF
@@ -1207,7 +1209,7 @@ SUBROUTINE subset_domain
  ELSE
   allocate(lon1d(idm_out))
   allocate(lat1d(jdm_out))
- ENDIF     
+ ENDIF
  allocate(depth(kdm_out))
  allocate(time(tdm_out))
 
@@ -1217,10 +1219,10 @@ SUBROUTINE subset_domain
    print *, "This part of cms is not implemented yet"
    stop
   ELSE
-   lon1d(1:ipart1)=tmpLon1d(istart:gidm) 
+   lon1d(1:ipart1)=tmpLon1d(istart:gidm)
    lon1d(ipart1+1:idm_out)=tmpLon1d(1:iend)
   ENDIF
- ELSE  
+ ELSE
   IF (grid2d) THEN
    lon1d=tmpLon_new(istart_new:iend_new)
   ELSE
@@ -1261,36 +1263,36 @@ SUBROUTINE subset_domain
     ENDIF
   ENDDO
  ENDIF
-END SUBROUTINE subset_domain 
+END SUBROUTINE subset_domain
 
 !**************************************************************
 !called from SUBROUTINE make_nestfiles_opendap or
 !from SUBROUTINE make_nestfiles_localfile
 !create the files with the oceonographic data
-SUBROUTINE create_nestfile(nestname, wvel_change, num) 
+SUBROUTINE create_nestfile(nestname, wvel_change, num)
  character (len = *), intent(in)       :: nestname
  logical (kind=log_kind), intent(in)   :: wvel_change
  integer (kind=int_kind), intent(in)   :: num
 
- integer (kind=int_kind) :: size_idm, size_jdm, ncId, i, j, k   
+ integer (kind=int_kind) :: size_idm, size_jdm, ncId, i, j, k
  character (char_len)    :: units(4), year_start, month_start, day_start,total_start
  real (kind = real_kind), allocatable :: uvel_save(:,:,:,:), vvel_save(:,:,:,:), &
      wvel_save(:,:,:,:), dens_save(:,:,:,:),temp_save(:,:,:,:), &
      saln_save(:,:,:,:), ssh_save(:,:,:), lat_save(:)
 
-! USE velocity_conversionfactor 
+! USE velocity_conversionfactor
 ! change sign if wvelocity direction is upward
-! make fillvalues 2^100 
+! make fillvalues 2^100
   DO i=1,idm_out
     DO j=1,jdm_out
       DO k=1,kdm_out
 !       change uvel
         !print *, 'uvel(i,j,k,1):', uvel(i,j,k,1), abs(uvel(i,j,k,1) - fill_value)
-        !print *, 'fill_value', fill_value 
+        !print *, 'fill_value', fill_value
         !print *, 'velocity_conversion_factor', velocity_conversion_factor
         IF (abs(uvel(i,j,k,1) - fill_value) .lt. 0.01) THEN
           uvel(i,j,k,1) = 2.**100
-          !print *, 'got into the if equal fill_value'        
+          !print *, 'got into the if equal fill_value'
         ELSE
           IF (isnan(uvel(i,j,k,1))) THEN
             uvel(i,j,k,1) = 2.**100
@@ -1300,7 +1302,7 @@ SUBROUTINE create_nestfile(nestname, wvel_change, num)
             !print *, 'got into the if conversion'
           ENDIF
         ENDIF
-        
+
         IF (abs(vvel(i,j,k,1) - fill_value) .lt. 0.01) THEN
           vvel(i,j,k,1) = 2.**100
         ELSE
@@ -1324,7 +1326,7 @@ SUBROUTINE create_nestfile(nestname, wvel_change, num)
                wvel(i,j,k,1) = -1. * wvel(i,j,k,1)
              ENDIF
            ENDIF
-         ENDIF  
+         ENDIF
        ENDIF
 
 !      change dens
@@ -1478,7 +1480,7 @@ SUBROUTINE create_nestfile(nestname, wvel_change, num)
  ENDIF
 
 !close netcdf file
- CALL nc_close(nestname, ncId) 
+ CALL nc_close(nestname, ncId)
 
 END SUBROUTINE create_nestfile
 
@@ -1584,8 +1586,8 @@ SUBROUTINE make_nestfiles_opendap
      print *, 'Succesfully read data: Sea surface height'
      ssh(:,:,:)=ssh4d(:,:,:,1)
    ENDIF
-   CALL create_nestfile(nestname,wvel_change, num)    
-   CALL create_filedownload(nestname)  
+   CALL create_nestfile(nestname,wvel_change, num)
+   CALL create_filedownload(nestname)
   ELSE
     print *, 'Data file ',num+1,' of ',lend-lstart+1,' already exists'
   ENDIF !end if: if (downl .eqv. .false.) THEN
@@ -1597,7 +1599,7 @@ SUBROUTINE make_nestfiles_opendap
       month = 1
       year = year + 1
     ENDIF
-  ELSE  
+  ELSE
     seconds = seconds + time_step
     mm = int(seconds/60)
     seconds = mod(seconds,60)
@@ -1611,8 +1613,8 @@ SUBROUTINE make_nestfiles_opendap
     CALL jd(year, month, days,jj)
     jj = jj + dd
     CALL cdate(jj, year, month, days)
-  ENDIF 
-   
+  ENDIF
+
  ENDDO !lc=lstart,lend
 
 END SUBROUTINE make_nestfiles_opendap
@@ -1622,10 +1624,10 @@ END SUBROUTINE make_nestfiles_opendap
 SUBROUTINE make_nestfiles_local
 
  integer (kind=int_kind) :: year, month, days, hours, minutes, seconds, &
-                            mm, hh, dd, jj,i, ncId    
+                            mm, hh, dd, jj,i, ncId
  logical (kind=log_kind) :: wvel_change, downl
  character (char_len)    :: nestname, file_uvel, file_vvel, file_wvel, &
-                            file_dens, file_temp, file_saln, file_ssh    
+                            file_dens, file_temp, file_saln, file_ssh
 
  allocate(uvel(idm_out,jdm_out,kdm_out,1))
  allocate(vvel(idm_out,jdm_out,kdm_out,1))
@@ -1667,17 +1669,17 @@ SUBROUTINE make_nestfiles_local
 ! IF not already downloaded then download
   IF (downl .eqv. .false.) THEN
 
-   write(*,'(A,I0,A,I0,A,I0,A,I2.2,A,I2.2,A,I2.2)') & 
+   write(*,'(A,I0,A,I0,A,I0,A,I2.2,A,I2.2,A,I2.2)') &
      'Reading data files: ',year,"-",month,"-",days," ",hours,":",minutes,":",seconds
 
    IF (uvel_name .ne. 'unknown' ) THEN
-!   Open the file with uvel for reading 
+!   Open the file with uvel for reading
     write(file_uvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days, hours,minutes,seconds,'u.nc'
     IF (nc_file_exists(file_uvel) .eqv. .false.) THEN
-     write(file_uvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') & 
+     write(file_uvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
            trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
 
     CALL readdata(file_uvel,ncId,uvel_name,uvel,1)
     print *, 'Succesfully read file with: U-velocity'
@@ -1686,13 +1688,13 @@ SUBROUTINE make_nestfiles_local
    ENDIF
 
    IF (vvel_name .ne. 'unknown' ) THEN
-!   Open the file with vvel for reading 
+!   Open the file with vvel for reading
     write(file_vvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days, hours,minutes,seconds,'v.nc'
     IF (nc_file_exists(file_vvel) .eqv. .false.) THEN
      write(file_vvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
            trim(filenest)//'raw/nest_',nest_n,'_',year, month, days, hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
     CALL readdata(file_vvel,ncId,vvel_name,vvel,1)
     print *, 'Succesfully read file with: V-velocity'
    ELSE
@@ -1700,13 +1702,13 @@ SUBROUTINE make_nestfiles_local
    ENDIF
 
    IF (wvel_name .ne. 'unknown' ) THEN
-!   Open the file with wvel for reading 
-    write(file_wvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') & 
+!   Open the file with wvel for reading
+    write(file_wvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days, hours,minutes,seconds,'w.nc'
     IF (nc_file_exists(file_wvel) .eqv. .false.) THEN
      write(file_wvel,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
            trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
     CALL readdata(file_wvel,ncId,wvel_name,wvel,1)
 !   check if wvelocity is positive upward or positive downward
 !   if the wvelocity is positive upward then the sign of the w velocities have to changed
@@ -1728,51 +1730,51 @@ SUBROUTINE make_nestfiles_local
    ENDIF
 
    IF (dens_name .ne. 'unknown' ) THEN
-!   Open the file with dens for reading 
+!   Open the file with dens for reading
     write(file_dens,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'d.nc'
     IF (nc_file_exists(file_dens) .eqv. .false.) THEN
-      write(file_dens,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') & 
+      write(file_dens,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
             trim(filenest)//'raw/nest_',nest_n,'_',year, month, days, hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
     CALL readdata(file_dens,ncId,dens_name,dens,1)
     print *, 'Succesfully read file with: Density'
    ENDIF
 
    IF (temp_name .ne. 'unknown' ) THEN
-!   Open the file with temp for reading 
+!   Open the file with temp for reading
     write(file_temp,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'t.nc'
     IF (nc_file_exists(file_temp) .eqv. .false.) THEN
      write(file_temp,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
            trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
     CALL readdata(file_temp,ncId,temp_name,temp,1)
     print *, 'Succesfully read file with: Temperature'
    ENDIF
 
    IF (saln_name .ne. 'unknown' ) THEN
-!   Open the file with saln for reading 
+!   Open the file with saln for reading
     write(file_saln,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'s.nc'
     IF (nc_file_exists(file_saln) .eqv. .false.) THEN
      write(file_saln,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
            trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
     CALL readdata(file_saln,ncId,saln_name,saln,1)
     print *, 'Succesfully read file with: Salinity'
    ENDIF
 
 !  read ssh
    IF (ssh_name .ne. 'unknown' ) THEN
-!   Open the file with ssh for reading 
+!   Open the file with ssh for reading
     write(file_ssh,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
           trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'ssh.nc'
 
     IF (nc_file_exists(file_ssh) .eqv. .false.) THEN
       write(file_ssh,'(A,I0,A,I4.4,I2.2,I2.2,I2.2,I2.2,I2.2,A)') &
             trim(filenest)//'raw/nest_',nest_n,'_',year, month, days,hours,minutes,seconds,'.nc'
-    ENDIF 
+    ENDIF
     CALL readdata(file_ssh,ncId,ssh_name,ssh4d,1)
     ssh(:,:,:)=ssh4d(:,:,:,1)
     print *, 'Succesfully read file with: Sea surface height'
@@ -1792,7 +1794,7 @@ SUBROUTINE make_nestfiles_local
       month = 1
       year = year + 1
     ENDIF
-  ELSE  
+  ELSE
     seconds = seconds + time_step
     mm = int(seconds/60)
     seconds = mod(seconds,60)
@@ -1806,7 +1808,7 @@ SUBROUTINE make_nestfiles_local
     jj = jj + dd
     CALL cdate(jj, year, month, days)
   ENDIF
- 
+
  ENDDO !end loop: do WHILE (year .ne. tend_yy  .or. month .ne. tend_mm .or. days .ne. tend_dd)
 
 END SUBROUTINE make_nestfiles_local
@@ -1824,14 +1826,14 @@ SUBROUTINE readdata(flename,ncId,fieldname,field,tstart)
     CALL nc_read4d(flename, ncId, fieldname,field(ipart1+1:idm_out,:,:,1),iend,jdm_out,kdm_out,1,(/ 1,jstart,kstart,tstart /))
    ELSE
     CALL nc_read4d(flename, ncId, fieldname,field(:,:,:,1),idm_out,jdm_out,kdm_out,1,(/ istart,jstart,kstart,tstart /))
-   ENDIF 
+   ENDIF
   ELSE ! not hasTime
    IF (istart > iend) THEN
     CALL nc_read3d(flename, ncId, fieldname,field3d(1:ipart1,:,:),ipart1,jdm_out,kdm_out,(/ istart,jstart,kstart /))
     CALL nc_read3d(flename, ncId, fieldname,field3d(ipart1+1:idm_out,:,:),iend,jdm_out,kdm_out,(/ 1,jstart,kstart /))
    ELSE
     CALL nc_read3d(flename, ncId, fieldname,field3d(:,:,:),idm_out,jdm_out,kdm_out,(/ istart,jstart,kstart /))
-   ENDIF 
+   ENDIF
    field(:,:,:,1) = field3d (:,:,:)
   ENDIF
  ELSE ! not hasDepth
@@ -1841,7 +1843,7 @@ SUBROUTINE readdata(flename,ncId,fieldname,field,tstart)
     CALL nc_read3d(flename, ncId, fieldname,field3d(ipart1+1:idm_out,:,1),iend,jdm_out,1,(/ 1,jstart,tstart /))
    ELSE
     CALL nc_read3d(flename, ncId, fieldname,field3d(:,:,1),idm_out,jdm_out,1,(/ istart,jstart,tstart /))
-   ENDIF 
+   ENDIF
    field(:,:,1,1) = field3d (:,:,1)
   ELSE ! not hasTime
    IF (istart > iend) THEN
@@ -1849,11 +1851,11 @@ SUBROUTINE readdata(flename,ncId,fieldname,field,tstart)
     CALL nc_read2d(flename, ncId, fieldname,field2d(ipart1+1:idm_out,:),iend,jdm_out,(/ 1,jstart /))
    ELSE
     CALL nc_read2d(flename, ncId, fieldname,field2d(:,:),idm_out,jdm_out,(/ istart,jstart /))
-   ENDIF 
+   ENDIF
    field(:,:,1,1) = field2d (:,:)
   ENDIF
  ENDIF
- CALL nc_close(flename, ncId) 
+ CALL nc_close(flename, ncId)
 
 END SUBROUTINE readdata
 
@@ -1868,7 +1870,7 @@ SUBROUTINE deallocate_memory
  deallocate(temp)
  deallocate(dens)
  deallocate(uvel_new)
- deallocate(vvel_new) 
+ deallocate(vvel_new)
  deallocate(wvel_new)
  deallocate(saln_new)
  deallocate(temp_new)
@@ -1898,32 +1900,32 @@ SUBROUTINE deallocate_memory
   deallocate(x)
   deallocate(y)
  ELSE
-  deallocate(tmpLon1d) 
+  deallocate(tmpLon1d)
   deallocate(tmpLat1d)
  ENDIF
- 
-END SUBROUTINE  
+
+END SUBROUTINE
 
 !**************************************************************
 !main SUBROUTINE. Calls all the other subroutines
 SUBROUTINE get_data(pnest_n, filenumber )
 
  integer (kind=int_kind), intent(in) :: pnest_n
- character(char_len), intent(in)     :: filenumber    
-     
+ character(char_len), intent(in)     :: filenumber
+
  nest_n = pnest_n
 
  CALL create_directories(filenumber)
  CALL read_nest_file
  CALL read_data
  CALL change_longitudes
- CALL read_filedownload  
+ CALL read_filedownload
  IF (grid2d) THEN
   CALL define_new_grid
  ENDIF
  CALL subset_domain
  IF (grid2d) THEN
-  CALL calculate_weights 
+  CALL calculate_weights
  ENDIF
  IF (filename .eq. 'unknown') THEN
   CALL make_nestfiles_local
