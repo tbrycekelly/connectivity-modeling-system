@@ -94,6 +94,7 @@ SUBROUTINE create_directories(filenumber)
  character(char_len), intent(in)  :: filenumber
  character(char_len)              :: filedir, fileoutput, filescratch
 
+ write(*,*) 'Start create_directories' ! TBK
  !make /expt_
  write(filedir,'(A,A)') 'expt_',trim(filenumber)
  CALL make_dir(adjustl(trim(filedir)),Len(adjustl(trim(filedir))))
@@ -102,10 +103,10 @@ SUBROUTINE create_directories(filenumber)
  CALL make_dir(adjustl(trim(filenest)),Len(adjustl(trim(filenest))))
 
  !add path to /input_/
- write(filedir,'(A,A)') 'input_',trim(filenumber) ! Copied from the 'expt_' line above - TBK
- write(fileinput,'(A,A,A)') 'input_',trim(filenumber), '/'  ! Original line, not sure what it does.
- CALL make_dir(adjustl(trim(filedir)),Len(adjustl(trim(filedir)))) ! Copied from above - TBK
+ write(fileinput,'(A,A,A)') 'input_', trim(filenumber), '/'  ! Original line, not sure what it does. TBK
 
+ write(*,*) 'Done create_directories' ! TBK
+ write(*,*) '' ! TBK
 END SUBROUTINE create_directories
 
 !**************************************************************
@@ -116,6 +117,7 @@ SUBROUTINE read_nest_file
  character(char_len)     :: nlname
  logical (kind=log_kind) :: file_exists
 
+ write(*,*) 'Start read_nest_file' ! TBK
 !set variables
  filename = 'unknown'
  xaxis = 'unknown'
@@ -183,17 +185,17 @@ SUBROUTINE read_nest_file
 
  IF (filename .ne. 'unknown') THEN
   IF (time_units .ne. "months" .and. time_units .ne. "days" .and. time_units .ne. "seconds" .and. time_units .ne. "hours") THEN
-    print *, 'time_units in the nestfile needs to be equal to: months, days, hours or seconds'
+    print *, '    time_units in the nestfile needs to be equal to: months, days, hours or seconds'
     stop
   ENDIF
  ENDIF
 
  IF (xaxis .eq. 'unknown' .or. xaxis .eq. '') THEN
-  print *, 'xaxis in the nestfile has to have a value'
+  print *, '    xaxis in the nestfile has to have a value'
   stop
  ENDIF
  IF (yaxis .eq. 'unknown' .or. yaxis .eq. '') THEN
-  print *, 'yaxis in the nestfile has to have a value'
+  print *, '    yaxis in the nestfile has to have a value'
   stop
  ENDIF
 ! IF (taxis .eq. 'unknown' .or. taxis .eq. '') THEN
@@ -201,27 +203,30 @@ SUBROUTINE read_nest_file
 !  stop
 ! ENDIF
  IF (lon_name .eq. 'unknown' .or. lon_name .eq. '') THEN
-  print *, 'lon_name in the nestfile has to have a value'
+  print *, '    lon_name in the nestfile has to have a value'
   stop
  ENDIF
  IF (lat_name .eq. 'unknown' .or. lat_name .eq. '') THEN
-  print *, 'lat_name in the nestfile has to have a value'
+  print *, '    lat_name in the nestfile has to have a value'
   stop
  ENDIF
  IF (uvel_name .eq. 'unknown' .or. uvel_name .eq. '') THEN
-  print *, 'uvel_name in the nestfile has to have a value'
+  print *, '    uvel_name in the nestfile has to have a value'
   stop
  ENDIF
  IF (vvel_name .eq. 'unknown' .or. vvel_name .eq. '') THEN
-  print *, 'vvel_name in the nestfile has to have a value'
+  print *, '    vvel_name in the nestfile has to have a value'
   stop
  ENDIF
  IF (fill_value .eq. 0) THEN
-  print *, 'fill_value in the nestfile has to have a value'
+  print *, '    fill_value in the nestfile has to have a value'
   stop
  ENDIF
 
- print *, 'fill_value and velocity_conversion_factor on read', fill_value, velocity_conversion_factor
+ print *, '    fill_value and velocity_conversion_factor on read', fill_value, velocity_conversion_factor
+
+ write(*,*) 'End read_nest_file' ! TBK
+ write(*,*) '' ! TBK
 END SUBROUTINE read_nest_file
 
 !**************************************************************
@@ -230,6 +235,8 @@ SUBROUTINE read_data
 
  integer  (kind=int_kind) :: ncId, ncIdW
  character (char_len)     :: datafile, datafileW
+
+ write(*,*) 'Start read_data' ! TBK
 
 !if method = opendap then read from url
 !if method = localfile then read from first nestfile in raw directory
@@ -245,7 +252,7 @@ SUBROUTINE read_data
  ENDIF
 
 !Open file for read access
- print *, 'Opening file for reading: ', trim(datafile)
+ print *, '    Opening file for reading: ', trim(datafile)
  CALL nc_open(datafile,ncId)
 
 !Get coordinate dimensions
@@ -281,7 +288,7 @@ SUBROUTINE read_data
   IF (ndimsLon .eq. 2 .and. ndimsLat .eq. 2) THEN
    grid2d = .true.
   ELSE
-   print *, 'Longitude and Latitude have a dimension that is not supported'
+   print *, '    Longitude and Latitude have a dimension that is not supported'
    stop
   ENDIF
  ENDIF
@@ -308,7 +315,7 @@ SUBROUTINE read_data
    gidm = gidm-1
   ENDIF
  ENDIF
- print *, 'Succesfully read data: Longitude'
+ print *, '    Succesfully read data: Longitude'
 
 !get latitude values
  latDec = .false.
@@ -320,7 +327,7 @@ SUBROUTINE read_data
     LatDec = .true.
   ENDIF
  ENDIF
- print *, 'Succesfully read data: Latitude'
+ print *, '    Succesfully read data: Latitude'
 
 !get depth values
  IF (hasDepth) THEN
@@ -329,11 +336,11 @@ SUBROUTINE read_data
   IF (zaxis_positive_direction .eq. 'up') THEN
    tmpDepth=-1.*tmpDepth
   ELSE IF (zaxis_positive_direction .ne. 'down') THEN
-   print *, 'zaxis_positive_direction in the nestfile has to have the value up or down'
+   print *, '    zaxis_positive_direction in the nestfile has to have the value up or down'
    stop
   ENDIF
   tmpDepth = tmpDepth * depth_conversion_factor
-  print *, 'Succesfully read data: Depth'
+  print *, '    Succesfully read data: Depth'
  ELSE
   tmpDepth = 0
  ENDIF
@@ -342,7 +349,7 @@ SUBROUTINE read_data
  IF (hasTime .and. filename .ne. 'unknown') THEN
    CALL nc_read1d_dbl(datafile, ncId, time_name, tmpDoubleTime, gtdm)
    tmpTime=real(tmpDoubleTime)
-   print *, 'Succesfully read data: Time'
+   print *, '    Succesfully read data: Time'
   ELSE
    tmpTime=1;
  ENDIF
@@ -365,15 +372,17 @@ SUBROUTINE read_data
    bgrid=.true.
   ENDIF
   IF (bgrid .eqv. .true.) THEN
-   print *, 'Assuming B-grid for vertical velocity: regridding W'
+   print *, '    Assuming B-grid for vertical velocity: regridding W'
   ELSE
-   print *, 'Vertical velocity is not on a B-Grid'
+   print *, '    Vertical velocity is not on a B-Grid'
   ENDIF
  ENDIF
 
 !Close file after data read
  CALL nc_close(datafile,ncId)
 
+write(*,*) 'End read_data' ! TBK
+write(*,*) '' ! TBK
 END SUBROUTINE read_data
 
 !**************************************************************
@@ -384,9 +393,11 @@ SUBROUTINE create_filedownload(nestname)
  integer (kind=int_kind) :: iunit
  character(char_len)     :: downlname
 
- write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt'
  CALL get_unit(iunit)
 
+ write(*,*) 'Start create_filedownload' ! TBK
+ write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt'
+ 
  IF ((first_time_downl) .and. (numFiles .le. 0)) THEN
 ! if metafile not exists then create a new file
 
@@ -427,6 +438,8 @@ SUBROUTINE create_filedownload(nestname)
 !close file
  CALL release_unit(iunit)
 
+write(*,*) 'End' ! TBK
+write(*,*) '' ! TBK
 END SUBROUTINE create_filedownload
 
 !**************************************************************
@@ -436,7 +449,6 @@ END SUBROUTINE create_filedownload
 !if the nestfile is the same then these datafiles do not have to be downloaded again
 !if the nestfile is different then all datafiles have to be downloaded again
 SUBROUTINE read_filedownload
-
  integer (kind=int_kind) :: iunit, numLines, i,downl_timeStep
  real (kind = real_kind) :: downl_xstart, downl_xend,downl_ystart, downl_yend,downl_zstart, downl_zend,&
                             downl_velFactor,downl_depthFactor,downl_fillvalue
@@ -446,7 +458,7 @@ SUBROUTINE read_filedownload
                             downl_dens, downl_temp,downl_saln, downl_ssh
 
  first_time_downl = .true.
-
+write(*,*) 'Start Read_filedownload' ! TBK
  write(downlname,'(A,I0,A)') 'download_',nest_n,'.txt'
  INQUIRE(FILE=trim(filenest)//downlname, EXIST=file_exists)
  IF (file_exists) THEN
@@ -529,14 +541,17 @@ SUBROUTINE read_filedownload
   allocate(downl_nest(1))
  ENDIF
 
+write(*,*) 'End file_download' ! TBK
+write(*,*) '' ! TBK
 END SUBROUTINE read_filedownload
 
 !**************************************************************
 !handle longitude values to 0<x<360
 SUBROUTINE change_longitudes
 
- integer (kind=int_kind)  :: i,j
 
+ integer (kind=int_kind)  :: i,j
+write(*,*) 'Start change_longitudes' ! TBK
  DO WHILE (xstart .lt. 0)
    xstart = xstart + 360
  ENDDO
